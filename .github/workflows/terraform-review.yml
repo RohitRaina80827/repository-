@@ -18,79 +18,43 @@ jobs:
 
     defaults:
       run:
-        shell: bash
+        working-directory: infra/dev
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: latest
+          terraform_version: 1.10.5
 
       - name: Terraform Format Check
-        working-directory: infra/dev
-        run: |
-          echo "Running Terraform format check..."
-          terraform fmt -check -recursive
+        run: terraform fmt -check -recursive
 
       - name: Terraform Init
-        working-directory: infra/dev
-        run: |
-          echo "Initializing Terraform without backend..."
-          terraform init -backend=false
+        run: terraform init -backend=false
 
       - name: Terraform Validate
-        working-directory: infra/dev
-        run: |
-          echo "Validating Terraform configuration..."
-          terraform validate
+        run: terraform validate
 
-      # TEMPORARILY BYPASSED
+      # The Terraform tests currently require deployment-specific
+      # variables such as release_id, region, account_id,
+      # availability_zones, owner and application_bucket_suffix.
       #
-      # The Terraform tests currently require variables such as:
-      # release_id, availability_zones, owner, region,
-      # account_id and application_bucket_suffix.
+      # We intentionally do not provide those values because this
+      # CI workflow must not start/deploy infrastructure.
       #
-      # Providing real infrastructure values is intentionally avoided
-      # for now because the infrastructure should remain stale/inactive.
-      #
-      # This step is therefore skipped and does NOT create or modify
-      # any AWS infrastructure.
-      - name: Terraform Test (temporarily bypassed)
-        if: ${{ false }}
-        working-directory: infra/dev
-        run: |
-          echo "Running Terraform tests..."
-          terraform test
+      # The tests still run. If they fail, the workflow continues.
+      - name: Terraform Test
+        continue-on-error: true
+        run: terraform test
 
-      - name: Install Gitleaks
-        run: |
-          echo "Installing Gitleaks..."
-          curl -sSfL \
-            https://raw.githubusercontent.com/gitleaks/gitleaks/master/scripts/install.sh \
-            | sh -s -- -b "$HOME/.local/bin"
-
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
+      # Official Gitleaks GitHub Action.
+      # This replaces the old curl/install.sh method.
       - name: Secret Scan
-        run: |
-          echo "Running secret scan..."
-          gitleaks detect \
-            --source . \
-            --verbose \
-            --redact
-
-      - name: Review Summary
-        if: always()
-        run: |
-          echo "========================================"
-          echo "Terraform Review Summary"
-          echo "========================================"
-          echo "Terraform format: checked"
-          echo "Terraform init: completed without backend"
-          echo "Terraform validation: checked"
-          echo "Terraform tests: temporarily bypassed"
-          echo "Secret scan: checked"
-          echo "========================================"
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
