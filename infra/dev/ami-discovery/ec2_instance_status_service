@@ -1,0 +1,37 @@
+resource "aws_instance" "status" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+
+  subnet_id = aws_subnet.public["a"].id
+
+  associate_public_ip_address = true
+
+  iam_instance_profile = aws_iam_instance_profile.runtime.name
+
+  vpc_security_group_ids = [
+    aws_security_group.core.id
+  ]
+
+  user_data = templatefile(
+    "${path.module}/../../scripts/bootstrap-status.sh",
+    {
+      project_name = "terraform-status-lab"
+      release_id   = var.release_id
+      bucket_name  = aws_s3_bucket.application.bucket
+      artifact_key = aws_s3_object.status_artifact.key
+    }
+  )
+
+  root_block_device {
+    encrypted   = true
+    volume_size = 8
+    volume_type = "gp3"
+
+    delete_on_termination = true
+  }
+
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
+}

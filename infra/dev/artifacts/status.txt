@@ -1,0 +1,4 @@
+Project: terraform-status-lab
+Environment: dev
+Release: stage07-v2
+Status: artifact-download-ok

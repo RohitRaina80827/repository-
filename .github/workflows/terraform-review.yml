@@ -1,0 +1,49 @@
+name: Terraform Review
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-review:
+    name: Terraform Review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.4
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: infra/dev
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: infra/dev
+        run: terraform validate
+
+      - name: Terraform Test
+        working-directory: infra/dev
+        run: terraform test
+
+      - name: Install Gitleaks
+        run: |
+          curl -L -o /tmp/gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp
+          /tmp/gitleaks version
+
+      - name: Secret Scan
+        run: /tmp/gitleaks git --redact --exit-code 1
