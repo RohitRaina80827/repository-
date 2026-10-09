@@ -10,7 +10,7 @@ strategy: fail-fast: false matrix: terraform-directory: - infra/dev - infra/boot
 
 defaults: run: shell: bash
 
-steps: - name: Checkout uses: actions/checkout@v6
+steps: - name: Checkout uses: actions/checkout@v4
 
 - name: Setup Terraform uses: hashicorp/setup-terraform@v3 with: terraform_version: 1.10.5
 
@@ -20,6 +20,95 @@ steps: - name: Checkout uses: actions/checkout@v6
 
 - name: Terraform Validate working-directory: ${{ matrix.terraform-directory }} run: terraform validate -no-color
 
-# IMPORTANT: # Do not run terraform test until all tests have been reviewed # and converted to safe mocked-provider plan tests. # # Some Terraform tests use command = apply and can create real # AWS resources. Deployment-specific variables alone do not # make those tests safe. # # This workflow intentionally performs validation only. # No AWS credentials are configured and no deployment is run.
+# SAFETY: Terraform tests are intentionally disabled until every # test is reviewed and converted to safe mocked-provider tests. # Some existing tests use command = apply and may create real AWS # resources. No AWS credentials or deployment steps are configured.
 
-- name: Secret Scan uses: gitleaks/gitleaks-action@v3 env: GITHUBTOKEN: ${{ secrets.GITHUBTOKEN }}
+- name: Install Gitleaks run: | set -euo pipefail VERSION="8.28.0" ARCHIVE="gitleaks${VERSION}linuxx64.tar.gz" curl -fsSL
+"https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/${ARCHIVE}"
+-o /tmp/gitleaks.tar.gz mkdir -p "
+𝐻
+𝑂
+𝑀
+𝐸
+/
+.
+𝑙
+𝑜
+𝑐
+𝑎
+𝑙
+/
+𝑏
+𝑖
+𝑛
+"
+𝑡
+𝑎
+𝑟
+−
+𝑥
+𝑧
+𝑓
+/
+𝑡
+𝑚
+𝑝
+/
+𝑔
+𝑖
+𝑡
+𝑙
+𝑒
+𝑎
+𝑘
+𝑠
+.
+𝑡
+𝑎
+𝑟
+.
+𝑔
+𝑧
+−
+𝐶
+"
+HOME/.local/bin" gitleaks "
+𝐻
+𝑂
+𝑀
+𝐸
+/
+.
+𝑙
+𝑜
+𝑐
+𝑎
+𝑙
+/
+𝑏
+𝑖
+𝑛
+/
+𝑔
+𝑖
+𝑡
+𝑙
+𝑒
+𝑎
+𝑘
+𝑠
+"
+𝑣
+𝑒
+𝑟
+𝑠
+𝑖
+𝑜
+𝑛
+𝑒
+𝑐
+ℎ
+𝑜
+"
+HOME/.local/bin" >> "$GITHUBPATH"
+
+- name: Secret Scan run: gitleaks detect --source . --redact --no-banner
