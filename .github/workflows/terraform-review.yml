@@ -47,10 +47,9 @@ jobs:
         working-directory: ${{ matrix.terraform-directory }}
         run: terraform validate -no-color
 
-      # Terraform tests remain disabled until all tests have been
-      # reviewed and converted to safe mocked-provider plan tests.
-      # Some existing tests use command = apply and could create AWS
-      # resources. This workflow does not deploy infrastructure.
+      - name: Terraform Test
+        if: matrix.terraform-directory == 'infra/dev'
+        run: terraform test -no-color
 
       - name: Install Gitleaks
         run: |

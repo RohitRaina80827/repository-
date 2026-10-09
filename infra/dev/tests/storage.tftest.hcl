@@ -1,3 +1,11 @@
+mock_provider "aws" {
+  mock_data "aws_availability_zones" {
+    defaults = {
+      names = ["us-east-1a", "us-east-1b"]
+    }
+  }
+}
+
 
 run "validate_s3_public_access_protection" {
   command = plan
