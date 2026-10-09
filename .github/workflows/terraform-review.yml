@@ -1,114 +1,69 @@
 name: Terraform Review
 
-on: push: branches: - main pull_request: branches: - main
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-permissions: contents: read
+permissions:
+  contents: read
 
-jobs: terraform-review: name: Terraform Review runs-on: ubuntu-latest
+jobs:
+  terraform-review:
+    name: Terraform Review
+    runs-on: ubuntu-latest
 
-strategy: fail-fast: false matrix: terraform-directory: - infra/dev - infra/bootstrap
+    strategy:
+      fail-fast: false
+      matrix:
+        terraform-directory:
+          - infra/dev
+          - infra/bootstrap
 
-defaults: run: shell: bash
+    defaults:
+      run:
+        shell: bash
 
-steps: - name: Checkout uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-- name: Setup Terraform uses: hashicorp/setup-terraform@v3 with: terraform_version: 1.10.5
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
 
-- name: Terraform Format Check run: terraform fmt -check -recursive
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
 
-- name: Terraform Init working-directory: ${{ matrix.terraform-directory }} run: terraform init -backend=false -input=false
+      - name: Terraform Init
+        working-directory: ${{ matrix.terraform-directory }}
+        run: terraform init -backend=false -input=false
 
-- name: Terraform Validate working-directory: ${{ matrix.terraform-directory }} run: terraform validate -no-color
+      - name: Terraform Validate
+        working-directory: ${{ matrix.terraform-directory }}
+        run: terraform validate -no-color
 
-# SAFETY: Terraform tests are intentionally disabled until every # test is reviewed and converted to safe mocked-provider tests. # Some existing tests use command = apply and may create real AWS # resources. No AWS credentials or deployment steps are configured.
+      # Terraform tests remain disabled until all tests have been
+      # reviewed and converted to safe mocked-provider plan tests.
+      # Some existing tests use command = apply and could create AWS
+      # resources. This workflow does not deploy infrastructure.
 
-- name: Install Gitleaks run: | set -euo pipefail VERSION="8.28.0" ARCHIVE="gitleaks${VERSION}linuxx64.tar.gz" curl -fsSL
-"https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/${ARCHIVE}"
--o /tmp/gitleaks.tar.gz mkdir -p "
-𝐻
-𝑂
-𝑀
-𝐸
-/
-.
-𝑙
-𝑜
-𝑐
-𝑎
-𝑙
-/
-𝑏
-𝑖
-𝑛
-"
-𝑡
-𝑎
-𝑟
-−
-𝑥
-𝑧
-𝑓
-/
-𝑡
-𝑚
-𝑝
-/
-𝑔
-𝑖
-𝑡
-𝑙
-𝑒
-𝑎
-𝑘
-𝑠
-.
-𝑡
-𝑎
-𝑟
-.
-𝑔
-𝑧
-−
-𝐶
-"
-HOME/.local/bin" gitleaks "
-𝐻
-𝑂
-𝑀
-𝐸
-/
-.
-𝑙
-𝑜
-𝑐
-𝑎
-𝑙
-/
-𝑏
-𝑖
-𝑛
-/
-𝑔
-𝑖
-𝑡
-𝑙
-𝑒
-𝑎
-𝑘
-𝑠
-"
-𝑣
-𝑒
-𝑟
-𝑠
-𝑖
-𝑜
-𝑛
-𝑒
-𝑐
-ℎ
-𝑜
-"
-HOME/.local/bin" >> "$GITHUBPATH"
+      - name: Install Gitleaks
+        run: |
+          set -euo pipefail
+          VERSION="8.28.0"
+          ARCHIVE="gitleaks_${VERSION}_linux_x64.tar.gz"
+          curl -fsSL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/${ARCHIVE}" \
+            -o /tmp/gitleaks.tar.gz
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf /tmp/gitleaks.tar.gz -C "$HOME/.local/bin" gitleaks
+          "$HOME/.local/bin/gitleaks" version
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-- name: Secret Scan run: gitleaks detect --source . --redact --no-banner
+      - name: Secret Scan
+        run: gitleaks detect --source . --redact --no-banner
