@@ -1,0 +1,29 @@
+name: OIDC Authentication Test
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  oidc-auth-test:
+    name: Verify AWS OIDC Authentication
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::980819806665:role/GitHubActions-OIDC-AuthOnly
+          aws-region: ap-south-1
+          audience: sts.amazonaws.com
+
+      - name: Verify assumed AWS identity
+        run: aws sts get-caller-identity
