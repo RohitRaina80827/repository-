@@ -1,60 +1,25 @@
 name: Terraform Review
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: push: branches: - main pull_request: branches: - main
 
-permissions:
-  contents: read
+permissions: contents: read
 
-jobs:
-  terraform-review:
-    name: Terraform Review
-    runs-on: ubuntu-latest
+jobs: terraform-review: name: Terraform Review runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: infra/dev
+strategy: fail-fast: false matrix: terraform-directory: - infra/dev - infra/bootstrap
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+defaults: run: shell: bash
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.10.5
+steps: - name: Checkout uses: actions/checkout@v6
 
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
+- name: Setup Terraform uses: hashicorp/setup-terraform@v3 with: terraform_version: 1.10.5
 
-      - name: Terraform Init
-        run: terraform init -backend=false
+- name: Terraform Format Check run: terraform fmt -check -recursive
 
-      - name: Terraform Validate
-        run: terraform validate
+- name: Terraform Init working-directory: ${{ matrix.terraform-directory }} run: terraform init -backend=false -input=false
 
-      # The Terraform tests currently require deployment-specific
-      # variables such as release_id, region, account_id,
-      # availability_zones, owner and application_bucket_suffix.
-      #
-      # We intentionally do not provide those values because this
-      # CI workflow must not start/deploy infrastructure.
-      #
-      # The tests still run. If they fail, the workflow continues.
-      - name: Terraform Test
-        continue-on-error: true
-        run: terraform test
+- name: Terraform Validate working-directory: ${{ matrix.terraform-directory }} run: terraform validate -no-color
 
-      # Official Gitleaks GitHub Action.
-      # This replaces the old curl/install.sh method.
-      - name: Secret Scan
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+# IMPORTANT: # Do not run terraform test until all tests have been reviewed # and converted to safe mocked-provider plan tests. # # Some Terraform tests use command = apply and can create real # AWS resources. Deployment-specific variables alone do not # make those tests safe. # # This workflow intentionally performs validation only. # No AWS credentials are configured and no deployment is run.
+
+- name: Secret Scan uses: gitleaks/gitleaks-action@v3 env: GITHUBTOKEN: ${{ secrets.GITHUBTOKEN }}
