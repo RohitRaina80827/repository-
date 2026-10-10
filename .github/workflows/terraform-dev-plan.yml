@@ -1,0 +1,61 @@
+name: Terraform Dev Plan
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: terraform-plan-dev
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::980819806665:role/GitHubActions-Terraform-DevPlan
+          aws-region: us-east-1
+          audience: sts.amazonaws.com
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Initialize dev backend
+        working-directory: infra/dev
+        run: terraform init -input=false -backend-config=dev.backend.hcl
+
+      - name: Validate dev configuration
+        working-directory: infra/dev
+        run: terraform validate -no-color
+
+      - name: Generate saved plan
+        working-directory: infra/dev
+        run: |
+          terraform plan \
+            -input=false \
+            -no-color \
+            -var-file=terraform.tfvars \
+            -out=dev.tfplan
+
+      - name: Upload private review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-dev-plan-${{ github.run_id }}
+          path: infra/dev/dev.tfplan
+          if-no-files-found: error
+          retention-days: 1
