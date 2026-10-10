@@ -67,12 +67,12 @@ jobs:
             "$COMMIT_SHA" "$RUN_ID" "$PLAN_SHA256" > dev-plan-metadata.txt
           cat dev-plan-metadata.txt
 
-      - name: Upload plan and integrity metadata
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-dev-plan-${{ github.run_id }}
-          path: |
-            infra/dev/dev.tfplan
-            infra/dev/dev-plan-metadata.txt
-          if-no-files-found: error
-          retention-days: 1
+      # - name: Upload plan and integrity metadata
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: terraform-dev-plan-${{ github.run_id }}
+      #     path: |
+      #       infra/dev/dev.tfplan
+      #       infra/dev/dev-plan-metadata.txt
+      #     if-no-files-found: error
+      #     retention-days: 1

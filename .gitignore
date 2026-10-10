@@ -25,3 +25,9 @@ debug.log
 
 # Track the non-sensitive dev inputs required by CI
 !infra/dev/terraform.tfvars
+
+# Temporary OIDC policy drafts
+.tmp/
+
+# Generated Terraform plan JSON (may contain sensitive values)
+infra/dev/dev-plan.json
