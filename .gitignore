@@ -22,3 +22,6 @@ debug.log
 # Editor temporary files
 *.swp
 *.swo
+
+# Track the non-sensitive dev inputs required by CI
+!infra/dev/terraform.tfvars
