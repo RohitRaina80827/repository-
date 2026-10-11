@@ -47,6 +47,17 @@ jobs:
         working-directory: infra/dev
         run: terraform validate -no-color
 
+      - name: Verify plan commit
+        env:
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_COMMIT=$(git rev-parse HEAD)
+          echo "Expected commit: $EXPECTED_COMMIT"
+          echo "Checked-out commit: $ACTUAL_COMMIT"
+          test "$ACTUAL_COMMIT" = "$EXPECTED_COMMIT"
+          echo "Commit check passed."
+
       - name: Generate saved plan
         working-directory: infra/dev
         run: |
