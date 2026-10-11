@@ -12,3 +12,4 @@ owner = "rohit"
 application_bucket_suffix = "89d8355d6f6a"
 
 release_id = "v1.0.0"
+# Test automatic Terraform plan trigger
