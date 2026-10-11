@@ -56,16 +56,45 @@ jobs:
             -var-file=terraform.tfvars \
             -out=dev.tfplan
 
-      - name: Record plan integrity metadata
+      - name: Record plan metadata and approval summary
         working-directory: infra/dev
         env:
+          REPOSITORY: ${{ github.repository }}
           COMMIT_SHA: ${{ github.sha }}
           RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          set -euo pipefail
+
           PLAN_SHA256=$(sha256sum dev.tfplan | awk '{print $1}')
-          printf 'commit_sha=%s\nrun_id=%s\nplan_sha256=%s\n' \
-            "$COMMIT_SHA" "$RUN_ID" "$PLAN_SHA256" > dev-plan-metadata.txt
+          REVIEW_DATE=$(date -u +%F)
+
+          printf 'repository=%s\nenvironment=dev\ncommit_sha=%s\nrun_id=%s\nrun_url=%s\nplan_sha256=%s\n' \
+            "$REPOSITORY" "$COMMIT_SHA" "$RUN_ID" "$RUN_URL" "$PLAN_SHA256" \
+            > dev-plan-metadata.txt
+
           cat dev-plan-metadata.txt
+
+          {
+            echo "## Terraform Plan Approval"
+            echo
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Repository | $REPOSITORY |"
+            echo "| Environment | dev |"
+            echo "| Commit SHA | \`$COMMIT_SHA\` |"
+            echo "| Actions run ID | $RUN_ID |"
+            echo "| Run URL | $RUN_URL |"
+            echo "| Saved plan SHA-256 | \`$PLAN_SHA256\` |"
+            echo "| Generated (UTC) | $REVIEW_DATE |"
+            echo "| Reviewer | To be completed |"
+            echo "| Decision | Pending |"
+            echo "| Notes | To be completed |"
+            echo
+            echo "**Review:** inspect the plan output in this run before recording a decision."
+            echo
+            echo "**Limitation:** the saved plan is not retained after the runner ends. This summary does not enforce approval."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # - name: Upload plan and integrity metadata
       #   uses: actions/upload-artifact@v4
