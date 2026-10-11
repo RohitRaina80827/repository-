@@ -91,7 +91,17 @@ jobs:
             echo "| Decision | Pending |"
             echo "| Notes | To be completed |"
             echo
-            echo "**Review:** inspect the plan output in this run before recording a decision."
+            echo "**Review:** inspect the plan before recording a decision."
             echo
-            echo "**Limitation:** the saved plan is not retained after the runner ends. This summary does not enforce approval."
+            echo "**Limitation:** this workflow records metadata but does not enforce approval or apply infrastructure."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload plan and integrity metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-dev-plan-${{ github.run_id }}
+          path: |
+            infra/dev/dev.tfplan
+            infra/dev/dev-plan-metadata.txt
+          if-no-files-found: error
+          retention-days: 1
