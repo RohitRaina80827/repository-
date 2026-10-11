@@ -82,6 +82,14 @@ jobs:
             -var-file=terraform.tfvars \
             -out=dev.tfplan
 
+      - name: Record and verify saved plan checksum
+        working-directory: infra/dev
+        run: |
+          set -euo pipefail
+          sha256sum dev.tfplan > dev-plan-checksum.txt
+          sha256sum --check dev-plan-checksum.txt
+          echo "Saved plan checksum verified."
+
       - name: Record plan metadata and approval summary
         working-directory: infra/dev
         env:
@@ -147,5 +155,6 @@ jobs:
             infra/dev/dev.tfplan
             infra/dev/dev-plan-metadata.txt
             infra/dev/dev-plan-approval.md
+            infra/dev/dev-plan-checksum.txt
           if-no-files-found: error
           retention-days: 1
