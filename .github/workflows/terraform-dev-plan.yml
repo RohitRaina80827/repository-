@@ -58,6 +58,15 @@ jobs:
           test "$ACTUAL_COMMIT" = "$EXPECTED_COMMIT"
           echo "Commit check passed."
 
+      - name: Record Terraform state fingerprint
+        working-directory: infra/dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          STATE_SHA256=$(terraform state pull | sha256sum | awk '{print $1}')
+          echo "state_sha256=$STATE_SHA256" >> "$GITHUB_ENV"
+          echo "State fingerprint recorded."
+
       - name: Generate saved plan
         working-directory: infra/dev
         run: |
@@ -78,10 +87,11 @@ jobs:
           set -euo pipefail
 
           PLAN_SHA256=$(sha256sum dev.tfplan | awk '{print $1}')
+          : "${STATE_SHA256:?State fingerprint is missing}"
           REVIEW_DATE=$(date -u +%F)
 
-          printf 'repository=%s\nenvironment=dev\ncommit_sha=%s\nrun_id=%s\nrun_url=%s\nplan_sha256=%s\n' \
-            "$REPOSITORY" "$COMMIT_SHA" "$RUN_ID" "$RUN_URL" "$PLAN_SHA256" \
+          printf 'repository=%s\nenvironment=dev\ncommit_sha=%s\nrun_id=%s\nrun_url=%s\nplan_sha256=%s\nstate_sha256=%s\n' \
+            "$REPOSITORY" "$COMMIT_SHA" "$RUN_ID" "$RUN_URL" "$PLAN_SHA256" "$STATE_SHA256" \
             > dev-plan-metadata.txt
 
           cat dev-plan-metadata.txt
@@ -97,6 +107,7 @@ jobs:
             echo "| Actions run ID | $RUN_ID |"
             echo "| Run URL | $RUN_URL |"
             echo "| Saved plan SHA-256 | \`$PLAN_SHA256\` |"
+            echo "| State SHA-256 | \`$STATE_SHA256\` |"
             echo "| Generated (UTC) | $REVIEW_DATE |"
             echo "| Reviewer | To be completed |"
             echo "| Decision | Pending |"
