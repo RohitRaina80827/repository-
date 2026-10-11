@@ -89,6 +89,7 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
           RUN_ID: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ARTIFACT_NAME: terraform-dev-plan-${{ github.run_id }}
         run: |
           set -euo pipefail
 
@@ -100,36 +101,51 @@ jobs:
             "$REPOSITORY" "$COMMIT_SHA" "$RUN_ID" "$RUN_URL" "$PLAN_SHA256" "$STATE_SHA256" \
             > dev-plan-metadata.txt
 
-          cat dev-plan-metadata.txt
+          cat > dev-plan-approval.md <<EOF
+          # Terraform Dev Plan Review
+
+          - Repository: $REPOSITORY
+          - Environment: dev
+          - Commit SHA: $COMMIT_SHA
+          - Actions run ID: $RUN_ID
+          - Actions run: $RUN_URL
+          - Saved plan SHA-256: $PLAN_SHA256
+          - State SHA-256: $STATE_SHA256
+          - Generated (UTC): $REVIEW_DATE
+          - Reviewer: Pending
+          - Decision: Pending
+          - Notes: Pending
+
+          ## Review checklist
+          - [ ] Verify the plan hash against the downloaded plan.
+          - [ ] Inspect the plan for unintended changes.
+          - [ ] Confirm the commit and state evidence are relevant.
+          - [ ] Record a genuine review decision.
+
+          This record does not enforce approval or authorize deployment.
+          Any relevant configuration, input, state, or plan change requires a fresh review.
+          EOF
 
           {
-            echo "## Terraform Plan Approval"
+            echo "## Terraform Dev Plan"
             echo
-            echo "| Field | Value |"
-            echo "|---|---|"
-            echo "| Repository | $REPOSITORY |"
-            echo "| Environment | dev |"
-            echo "| Commit SHA | \`$COMMIT_SHA\` |"
-            echo "| Actions run ID | $RUN_ID |"
-            echo "| Run URL | $RUN_URL |"
-            echo "| Saved plan SHA-256 | \`$PLAN_SHA256\` |"
-            echo "| State SHA-256 | \`$STATE_SHA256\` |"
-            echo "| Generated (UTC) | $REVIEW_DATE |"
-            echo "| Reviewer | To be completed |"
-            echo "| Decision | Pending |"
-            echo "| Notes | To be completed |"
+            echo "- Commit: \`$COMMIT_SHA\`"
+            echo "- Plan SHA-256: \`$PLAN_SHA256\`"
+            echo "- State SHA-256: \`$STATE_SHA256\`"
+            echo "- Decision: Pending"
             echo
-            echo "**Review:** inspect the plan before recording a decision."
+            echo "[Open this run to download the plan and review record]($RUN_URL)"
             echo
-            echo "**Limitation:** this workflow records metadata but does not enforce approval or apply infrastructure."
+            echo "The artifact \`$ARTIFACT_NAME\` contains the saved plan, metadata, and review record."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload plan and integrity metadata
+      - name: Upload plan, metadata, and review record
         uses: actions/upload-artifact@v4
         with:
           name: terraform-dev-plan-${{ github.run_id }}
           path: |
             infra/dev/dev.tfplan
             infra/dev/dev-plan-metadata.txt
+            infra/dev/dev-plan-approval.md
           if-no-files-found: error
           retention-days: 1
